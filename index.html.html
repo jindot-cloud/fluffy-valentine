@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Belated happy valentine's day!!</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <style>
+        :root { --blush: #fff0f3; --rose: #ff85a1; --dark: #ff4d6d; --velvet: #590d22; --gold: #c9a227; --teal: #4cc9f0; --paper: #e4d5b7; }
+        
+        body, html { height: 100%; margin: 0; background: var(--blush); font-family: 'Poppins', sans-serif; overflow: hidden; touch-action: none; }
+
+        #bg-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
+
+        /* Main Container Card */
+        #card { 
+            display: none; width: 95vw; max-width: 550px; height: 90vh; 
+            background: rgba(255, 255, 255, 0.98); border-radius: 30px; 
+            box-shadow: 0 20px 50px rgba(89,13,34,0.15); border: 8px solid white;
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            flex-direction: column; align-items: center; padding: 55px 25px 25px; z-index: 10;
+        }
+
+        /* Navigation Heart */
+        #back-heart {
+            display: none; position: absolute; top: 15px; left: 15px; width: 40px; height: 40px;
+            background: var(--rose); cursor: pointer; z-index: 50;
+            clip-path: path('M12 4.435c-1.989-5.399-12-4.597-12 3.568 0 4.06 3.06 6.06 12 14.282 8.94-8.222 12-10.222 12-14.282 0-8.165-10.011-8.967-12-3.568z');
+            transform: scale(1.2); transition: 0.3s;
+        }
+        #back-heart::after { content: '←'; color: white; font-size: 10px; position: absolute; top: 4px; left: 8px; font-weight: bold; }
+
+        .page { display: none; width: 100%; height: 100%; flex-direction: column; align-items: center; text-align: center; overflow-y: auto; padding-bottom: 20px; }
+        .active { display: flex; }
+
+        h2, .dancing { font-family: 'Dancing Script', cursive; color: var(--velvet); margin: 10px 0; }
+        .btn { background: var(--dark); color: white; border: none; padding: 12px 30px; border-radius: 30px; cursor: pointer; font-weight: bold; margin-top: 20px; flex-shrink: 0; transition: 0.3s; z-index: 100; }
+        .btn:hover { background: var(--velvet); transform: scale(1.05); }
+
+        /* Story Styles */
+        @keyframes wiggle {
+            0% { transform: rotate(-2deg); }
+            25% { transform: rotate(2deg); }
+            50% { transform: rotate(-2deg); }
+            75% { transform: rotate(2deg); }
+            100% { transform: rotate(-2deg); }
+        }
+        .photo-polaroid:hover {
+            animation: wiggle 0.5s ease-in-out infinite;
+            cursor: pointer;
+        }
+        .story-container input {
+            border:none; border-bottom:2px solid #ff85a1; background:transparent; 
+            font-family:'Dancing Script'; color:#ff4d6d; outline:none; text-align:center;
+        }
+
+        /* Component Styles */
+        .match-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; width: 95%; }
+        .match-card { aspect-ratio: 1; position: relative; transform-style: preserve-3d; transition: 0.4s; cursor: pointer; }
+        .match-card.flipped { transform: rotateY(180deg); }
+        .card-front, .card-back { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+        .card-front { background: var(--rose); color: white; }
+        .card-back { background: white; border: 2px solid var(--rose); transform: rotateY(180deg); font-size: 1.5rem; }
+
+        .map-wrapper { position: relative; width: 100%; height: 280px; background-color: var(--paper); border: 6px solid #8b5a2b; border-radius: 20px; overflow: hidden; cursor: crosshair; }
+        .pin { position: absolute; font-size: 1.8rem; cursor: pointer; transform: translate(-50%, -100%); z-index: 5; }
+        #map-note { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80%; background: white; padding: 15px; border-radius: 15px; border-left: 6px solid var(--dark); box-shadow: 0 10px 30px rgba(0,0,0,0.2); z-index: 100; }
+
+        .coupon-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; width: 95%; }
+        .coupon-card { height: 70px; position: relative; transform-style: preserve-3d; transition: 0.6s; cursor: pointer; }
+        .coupon-card.flipped { transform: rotateY(180deg); }
+        .coupon-front, .coupon-back { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 12px; display: flex; align-items: center; justify-content: center; padding: 5px; }
+        .coupon-front { background: linear-gradient(135deg, var(--rose), var(--dark)); color: white; border: 2px solid white; font-size: 0.8rem; }
+        .coupon-back { background: #fff; border: 2px dashed var(--rose); color: var(--velvet); transform: rotateY(180deg); font-family: 'Dancing Script'; }
+
+        .scratch-container { position: relative; width: 220px; height: 220px; background: #fff; border-radius: 20px; overflow: hidden; border: 4px solid var(--rose); margin: 10px 0; }
+        #scratch-canvas { position: absolute; top: 0; left: 0; z-index: 2; cursor: crosshair; touch-action: none; }
+        
+        #td-card-display { width: 85%; min-height: 120px; background: white; border: 4px solid var(--rose); border-radius: 20px; margin: 15px 0; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: 0.5s; transform: scale(0); opacity: 0; }
+        #td-card-display.show { transform: scale(1); opacity: 1; }
+
+        #surprise-screen { display: none; position: fixed; inset: 0; background: #0a0a0a; z-index: 2000; flex-direction: column; align-items: center; justify-content: center; }
+        #fireworks-canvas { position: absolute; inset: 0; z-index: 1; }
+        .final-banner { font-family: 'Dancing Script', cursive; font-size: 2.8rem; color: white; text-shadow: 0 0 20px var(--dark); border: 3px solid white; padding: 10px 30px; border-radius: 50px; background: rgba(255, 77, 109, 0.2); z-index: 10; animation: float 3s infinite; }
+        .scene-group { position: relative; width: 250px; height: 250px; display: flex; justify-content: center; align-items: flex-end; z-index: 10; }
+        .girl-wrapper { animation: sway 4s infinite; }
+        .girl { font-size: 8rem; }
+        .flowers { position: absolute; bottom: 20px; left: 45px; font-size: 4rem; animation: bounce 2s infinite; }
+        .cake { position: absolute; bottom: -5px; font-size: 4.5rem; filter: drop-shadow(0 0 10px gold); }
+
+        .final-area { position: relative; width: 100%; height: 200px; }
+        #yesBtn { position: absolute; transition: 0.2s ease; }
+        #noBtn { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); background: var(--teal); }
+
+        textarea { width: 90%; height: 100px; border: 2px dashed var(--rose); border-radius: 15px; padding: 10px; font-family: 'Dancing Script'; font-size: 1.2rem; background: #fffafb; resize: none; }
+
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
+        @keyframes sway { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
+        @keyframes bounce { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+    </style>
+</head>
+<body>
+
+    <canvas id="bg-canvas"></canvas>
+
+    <div id="intro" onclick="init()" style="position: absolute; top:50%; left:50%; transform:translate(-50%,-50%); text-align:center; cursor:pointer; z-index:100;">
+        <h1 style="font-size: 5rem; margin:0;">💌</h1>
+        <h2 class="dancing" style="font-size: 2rem;">surpriseee!!!! dapat ma shock ka</h2>
+        <p style="color: var(--dark); font-size: 0.8rem;">hehehehe do u want to open naba?
+            (p.s. click the card to open)
+        </p>
+    </div>
+
+    <div id="card">
+        <div id="back-heart" onclick="goPrev()"></div>
+
+        <div class="page active" id="p1">
+            <h2>To My Dearest Baby...</h2>
+            <textarea id="dedication">Every page is a little piece of our story. Belated Happy Valentine's Day! heheh... I am so sorry baby, i can't yet afford to buy flowers, chocolate and other special things para ihatag sa imo i am so poor wahh, i dont have money pa but dont worry baby bawi rako. I'll make it up to youu next time.
+                 So umm i made this for youu baby, its not that expensive and i dont know if ganahan ka, its the thought that counts diba?? and also late na nako ni na give hmph(nag pout) HAHAHHAHA. This is the second time that i make this, and mao rani ako na think na pede mahatag hehehehe. So supposedly gahapon rani pero ala nahuman tapos naka sleep pa jud ko tsk ayooo(very sleepyhead man) HAHAHAHHAHAHA. PERO I hope you'll like it lovelove!!! i just wanna say that "i love youuuuuu very very very muchhh". I dont want to lose youuuuu^^.   
+                
+                Once again belated happy valentines day baby!! i hope ganahan ka ohh....</textarea>
+            <button class="btn" onclick="go(2)">yeheeeeeeeeeeeeeey!!!! shyshy me>.<  ▶</button>
+        </div>
+
+        <div class="page" id="p2">
+            <h2>Memory Match</h2>
+            <div class="match-grid" id="grid"></div>
+            <button class="btn" id="match-btn" style="display:none" onclick="go(3)"> nag enjoy ka? charr, next naka baby? okkk▶</button>
+        </div>
+
+        <div class="page" id="p3">
+            <h2>Our Memory Map</h2>
+            <div class="map-wrapper" id="map-area" onclick="addPin(event)">
+                <div id="map-note">
+                    <p id="note-text" class="dancing" style="font-size: 1.1rem;"></p>
+                    <button class="btn" style="padding: 5px 10px; font-size: 0.7rem;" onclick="closeNote(event)">Close</button>
+                </div>
+            </div>
+            <div style="display:flex; gap:10px;">
+                <button class="btn" style="background:none; border:1px solid var(--dark); color:var(--dark); font-size:0.7rem; padding:5px 10px;" onclick="clearMap()">Reset Pins</button>
+                <button class="btn" onclick="go(4)">to the next page!! yohooooo!! ▶</button>
+            </div>
+        </div>
+
+        <div class="page" id="p4">
+            <h2>finish me sentence 
+            "gooo baby!!! fighting!!"
+            </h2>
+            <div class="story-container" style="text-align: left; font-size: 0.95rem; line-height: 1.8; color: #444; background: #fffafb; padding: 25px; border-radius: 20px; border: 1px solid #fff0f3; width: 100%; box-sizing: border-box; overflow-y: auto; margin-bottom: 10px; max-height: 70vh; box-shadow: inset 0 0 10px rgba(0,0,0,0.02);">
+                
+                <h3 class="dancing" style="color: #590d22; border-bottom: 1px solid #ff85a1; margin-top: 0; font-size: 1.6rem;">Chapter 1: </h3>
+                If our first meeting was a scene in a movie, the background music would be 
+               <input style="width:100px;" placeholder="">. 
+                I would be walking in, trying to play it cool, but secretly hoping you would notice me. I probably looked like a
+                <input style="width:100px;" placeholder="">. 
+                The first thing I noticed about you was your
+                <input style="width:100px;" placeholder="">, 
+                and I knew right then that we would be
+                <input style="width:130px;" placeholder="">.
+                <br><br>
+
+                <h3 class="dancing" style="color: #590d22; border-bottom: 1px solid #ff85a1; font-size: 1.6rem;">Chapter 2: The Little Things</h3>
+                Our secret couple "superpower" is definitely 
+                <input style="width:110px;" placeholder=""> 
+                If we were stranded on a deserted island, I'd bring you, a lifetime supply of 
+                <input style="width:120px;" placeholder="">
+                and our favorite
+                <input style="width:120px;" placeholder="">
+                that makes me fall for you every single day. Even when we are just 
+                <input style="width:120px;" placeholder="">, 
+                it feels like the greatest adventure of my life. You are my favorite 
+                <input style="width:90px;" placeholder=""> 
+                and my hardest goodbye.
+                <br><br>
+
+                <h3 class="dancing" style="color: #590d22; border-bottom: 1px solid #ff85a1; font-size: 1.6rem;">Chapter 3: To Infinity</h3>
+                Years from now, we will be sitting together on 
+                <input style="width:100px;" placeholder="">, 
+                still looking at each other like we do right now. I promise to always 
+                <input style="width:130px;" placeholder=""> 
+                and to never stop choosing you. Because in this life and the next life, I will keep on loving you, because you are my 
+                <input style="width:110px;" placeholder="">.
+
+                <div style="margin-top: 35px; display: flex; flex-direction: column; align-items: center;">
+                    <div class="photo-polaroid" style="padding: 12px 12px 45px 12px; background: white; box-shadow: 0 15px 25px rgba(0,0,0,0.12); border-radius: 2px; transform: rotate(-2deg); border: 1px solid #f0f0f0; transition: 0.3s;">
+                        <img src="https://i.ibb.co/1G4km5TX/pic20.jpg" alt="Our Memory" style="width: 190px; height: 190px; object-fit: cover; border: 1px solid #eee; display: block;">
+                        <p class="dancing" style="margin: 15px 0 0 0; text-align: center; color: #ff4d6d; font-size: 1.2rem;">Our Happiest Moment ❤️</p>
+                    </div>
+                    <p style="font-size: 0.7rem; color: #aaa; margin-top: 10px;">(Hover to shake!)</p>
+                </div>
+            </div>
+            <button class="btn" onclick="go(5)">Claim Your Coupons(goo baby, claim it) ▶</button>
+        </div>
+
+        <div class="page" id="p5">
+            <h2>Valentine Vouchers (ehheheh katong 3 na mapili ako ihatag, sabae rako heheh) </h2>
+            <div class="coupon-grid">
+                <div class="coupon-card" onclick="this.classList.toggle('flipped')"><div class="coupon-front">Gift #1</div><div class="coupon-back">kisses</div></div>
+                <div class="coupon-card" onclick="this.classList.toggle('flipped')"><div class="coupon-front">Gift #2</div><div class="coupon-back">online movie marathon</div></div>
+                <div class="coupon-card" onclick="this.classList.toggle('flipped')"><div class="coupon-front">Gift #3</div><div class="coupon-back">online date(through games) </div></div>
+                <div class="coupon-card" onclick="this.classList.toggle('flipped')"><div class="coupon-front">Gift #4</div><div class="coupon-back">mag play</div></div>
+                <div class="coupon-card" onclick="this.classList.toggle('flipped')"><div class="coupon-front">Gift #5</div><div class="coupon-back">sleep talks</div></div>
+                <div class="coupon-card" onclick="this.classList.toggle('flipped')"><div class="coupon-front">Gift #6</div><div class="coupon-back">virtual hugs</div></div>
+            </div>
+            <button class="btn" onclick="go(6)">yeheyyyyy next page nata><  ▶</button>
+        </div>
+
+        <div class="page" id="p6">
+            <h2>Scratch meee</h2>
+            <div class="scratch-container">
+                <div style="position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:1;">
+                    <div style="font-size:4rem; animation:heartbeat 1s infinite;">❤️</div>
+                    <p id="scr-msg" class="dancing" style="display:none; color:var(--dark); font-size:1.5rem;">I Love You, Baby!</p>
+                </div>
+                <canvas id="scratch-canvas"></canvas>
+            </div>
+            <button class="btn" onclick="go(7)">wetweieeww HAHAHAHHAH ▶</button>
+        </div>
+
+        <div class="page" id="p7">
+            <h2>Truth or Dare (pili ka ana baby, i do ah) </h2>
+            <div style="display:flex; gap:10px;">
+                <button class="btn" style="background:var(--teal);" onclick="getTD('truth')">TRUTH</button>
+                <button class="btn" style="background:#f72585;" onclick="getTD('dare')">DARE</button>
+            </div>
+            <div id="td-card-display">
+                <div id="td-type-label" class="dancing" style="font-size:0.9rem; font-weight:bold;">CHOOSE</div>
+                <div id="td-card-text" class="dancing" style="font-size:1.3rem;">...</div>
+            </div>
+            <button class="btn" onclick="go(8)"> proceed na ta sa surpriseee!!▶</button>
+        </div>
+
+        <div class="page" id="p8">
+            <h2 id="c-title">Calculating Love...</h2>
+            <h1 id="timer" style="font-size:5rem; color:var(--dark);">5</h1>
+            <div id="three-container" style="display:none; width:100%; height:180px;"></div>
+            <h2 id="banner-3d" class="dancing" style="display:none; color:var(--dark); font-size:2rem;">You are sooooooooooooooooooooo Rare! You areeeeeeeeeee sooooooooooo special!!!!!! You aree loved by meeeeeeeeeeeeeeee!!! I love youuuuuuuuuuuuuuuuuuuuuuuuuuuu!!! babyyyyyyyyyyyyyyyyyyyyyyy!!!
+                tadann! SURPRISEEEEEEEEEEEEEEEEEEEEEE!!!!!!!!!!!!111
+            </h2>
+            <button class="btn" id="s-btn" style="display:none" onclick="go(9)">YEHEYYYYY! HEEHEHEHEEH ▶</button>
+        </div>
+
+        <div class="page" id="p9">
+            <h2>Fortune Cookie</h2>
+            <div id="cookie" style="font-size:6rem; cursor:pointer;" onclick="crack()">🥠</div>
+            <p id="c-msg" class="dancing" style="font-size:1.3rem; margin-top:10px;"></p>
+            <button class="btn" id="c-btn" style="display:none" onclick="go(10)">The End (HUMANA)▶</button>
+        </div>
+
+        <div class="page" id="p10">
+            <h2>Did you enjoy it?</h2>
+            <div class="final-area" id="button-area">
+                <button class="btn" id="yesBtn" onmouseover="runAway()" onclick="runAway()">YES</button>
+                <button class="btn" id="noBtn" onclick="celebrate()">NO</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="surprise-screen">
+        <canvas id="fireworks-canvas"></canvas>
+        <div class="final-banner">Belated Happy Valentine's Day!</div>
+        <div class="scene-group">
+            <div class="girl-wrapper">
+                <div class="girl">👩</div>
+                <div class="flowers">💐</div>
+            </div>
+            <div class="cake">🎂</div>
+        </div>
+        <p style="color:white; z-index:10; font-style:italic; margin-top:15px;">You're my favorite. ❤️</p>
+    </div>
+
+    <script>
+        let step = 1, isStarted = false;
+        const bgCanvas = document.getElementById('bg-canvas');
+        const bgCtx = bgCanvas.getContext('2d');
+        bgCanvas.width = window.innerWidth; bgCanvas.height = window.innerHeight;
+        let bgItems = [];
+
+        function createBg() { for(let i=0; i<30; i++) bgItems.push({x: Math.random()*bgCanvas.width, y: Math.random()*bgCanvas.height, s: Math.random()*15+10, v: Math.random()*0.4+0.2, t: Math.random()<0.5?'❤️':'🌸'}); }
+        function drawBg() { bgCtx.clearRect(0,0,bgCanvas.width,bgCanvas.height); bgItems.forEach(i=>{i.y-=i.v; if(i.y<-30)i.y=bgCanvas.height+30; bgCtx.font=i.s+"px Arial"; bgCtx.fillText(i.t, i.x, i.y);}); requestAnimationFrame(drawBg); }
+
+        function init() {
+            if(isStarted) return; isStarted = true;
+            document.getElementById('intro').style.display = 'none';
+            document.getElementById('card').style.display = 'flex';
+            createBg(); drawBg(); setupMatch(); loadMemories(); initScratch();
+        }
+
+        function go(n) {
+            step = n;
+            document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+            document.getElementById('p'+n).classList.add('active');
+            document.getElementById('back-heart').style.display = (n > 1 && n < 10) ? 'block' : 'none';
+            if(n === 8) startCountdown();
+        }
+        function goPrev() { if(step > 1) go(step - 1); }
+
+        // --- MAP LOGIC ---
+        let memories = JSON.parse(localStorage.getItem('val_memories')) || [];
+        function loadMemories() { memories.forEach(m => renderPin(m)); }
+        function addPin(e) {
+            if(e.target !== document.getElementById('map-area')) return;
+            const rect = e.target.getBoundingClientRect();
+            const x = ((e.clientX - rect.left) / rect.width) * 100;
+            const y = ((e.clientY - rect.top) / rect.height) * 100;
+            const text = prompt("What happened here?");
+            if(text) { const m = {x,y,text}; memories.push(m); localStorage.setItem('val_memories', JSON.stringify(memories)); renderPin(m); }
+        }
+        function renderPin(m) {
+            const pin = document.createElement('div'); pin.className = 'pin';
+            pin.style.left=m.x+'%'; pin.style.top=m.y+'%'; pin.innerHTML='📍';
+            pin.onclick=(e)=>{e.stopPropagation(); document.getElementById('note-text').innerText=m.text; document.getElementById('map-note').style.display='block';};
+            document.getElementById('map-area').appendChild(pin);
+        }
+        function closeNote(e) { e.stopPropagation(); document.getElementById('map-note').style.display='none'; }
+        function clearMap() { if(confirm("Clear all pins?")) { memories=[]; localStorage.removeItem('val_memories'); document.querySelectorAll('.pin').forEach(p=>p.remove()); } }
+
+        // --- MATCH GAME ---
+        function setupMatch() {
+            const icons = ['💍','💍','🌹','🌹','🧸','🧸','🍫','🍫','✨','✨','🍕','🍕'];
+            icons.sort(() => Math.random() - 0.5);
+            let flipped = [], matched = 0;
+            icons.forEach(icon => {
+                const c = document.createElement('div'); c.className = 'match-card';
+                c.innerHTML = `<div class="card-front">?</div><div class="card-back">${icon}</div>`;
+                c.onclick = () => {
+                    if(flipped.length<2 && !c.classList.contains('flipped')) {
+                        c.classList.add('flipped'); flipped.push({el:c, icon});
+                        if(flipped.length===2) {
+                            if(flipped[0].icon === flipped[1].icon) { matched++; flipped=[]; if(matched===6) document.getElementById('match-btn').style.display='block'; }
+                            else { setTimeout(() => { flipped.forEach(f=>f.el.classList.remove('flipped')); flipped=[]; }, 700); }
+                        }
+                    }
+                };
+                document.getElementById('grid').appendChild(c);
+            });
+        }
+
+        // --- SCRATCH ---
+        function initScratch() {
+            const cvs = document.getElementById('scratch-canvas'), ctx = cvs.getContext('2d');
+            cvs.width = 220; cvs.height = 220; ctx.fillStyle = '#c9a227'; ctx.fillRect(0,0,220,220);
+            ctx.fillStyle="white"; ctx.font="bold 16px Arial"; ctx.textAlign="center"; ctx.fillText("SCRATCH ME", 110, 115);
+            let down = false;
+            const scratch = (e) => {
+                if(!down) return; const rect = cvs.getBoundingClientRect();
+                const x = (e.pageX || e.touches[0].pageX) - rect.left;
+                const y = (e.pageY || e.touches[0].pageY) - rect.top;
+                ctx.globalCompositeOperation = 'destination-out'; ctx.beginPath(); ctx.arc(x, y, 25, 0, 7); ctx.fill();
+                const d = ctx.getImageData(0,0,220,220).data; let count = 0;
+                for(let i=3; i<d.length; i+=4) if(d[i]===0) count++;
+                if(count > 22000) { cvs.style.opacity = '0'; document.getElementById('scr-msg').style.display = 'block'; }
+            };
+            cvs.onmousedown = () => down = true; cvs.ontouchstart = (e) => { down = true; e.preventDefault(); };
+            window.onmouseup = () => down = false; cvs.onmousemove = scratch; cvs.ontouchmove = scratch;
+        }
+
+        // --- TRUTH/DARE ---
+        function getTD(type) {
+            const t = ["First thought of me?", "A secret dream?", "My best trait?", "Your favorite date?"];
+            const d = ["Virtual kiss!", "Funny I love you!", "Silly selfie!", "Tell 3 reasons why you love me!"];
+            document.getElementById('td-type-label').innerText = type.toUpperCase();
+            document.getElementById('td-card-text').innerText = type==='truth'? t[Math.floor(Math.random()*t.length)] : d[Math.floor(Math.random()*d.length)];
+            document.getElementById('td-card-display').classList.add('show');
+        }
+
+        // --- 3D COUNTDOWN ---
+        function startCountdown() {
+            let t = 5; const iv = setInterval(() => {
+                t--; document.getElementById('timer').innerText = t;
+                if(t === 0) { 
+                    clearInterval(iv); document.getElementById('timer').style.display='none'; 
+                    document.getElementById('c-title').style.display='none'; 
+                    document.getElementById('three-container').style.display='block'; 
+                    document.getElementById('banner-3d').style.display='block'; 
+                    document.getElementById('s-btn').style.display='block'; initThree(); 
+                }
+            }, 1000);
+        }
+        function initThree() {
+            const cont = document.getElementById('three-container'); if(cont.innerHTML) return;
+            const scene = new THREE.Scene(); const cam = new THREE.PerspectiveCamera(75, cont.clientWidth/cont.clientHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({alpha:true}); renderer.setSize(cont.clientWidth, cont.clientHeight); cont.appendChild(renderer.domElement);
+            const heart = new THREE.Mesh(new THREE.TorusKnotGeometry(0.7, 0.2, 100, 16), new THREE.MeshPhongMaterial({color: 0xff4d6d}));
+            scene.add(heart); scene.add(new THREE.PointLight(0xffffff,1)); cam.position.z = 4;
+            function anim() { requestAnimationFrame(anim); heart.rotation.y += 0.03; renderer.render(scene, cam); } anim();
+        }
+
+        function crack() { document.getElementById('c-msg').innerText = "You are my world ❤️"; document.getElementById('c-btn').style.display='block'; }
+
+        // --- PRANK & CELEBRATION ---
+        function runAway() {
+            const btn = document.getElementById('yesBtn'); const area = document.getElementById('button-area');
+            btn.style.left = Math.random() * (area.clientWidth - 80) + 'px';
+            btn.style.top = Math.random() * (area.clientHeight - 40) + 'px';
+        }
+        function celebrate() {
+            document.getElementById('card').style.display = 'none';
+            document.getElementById('surprise-screen').style.display = 'flex';
+            initFireworks();
+        }
+
+        function initFireworks() {
+            const canvas = document.getElementById('fireworks-canvas'); const ctx = canvas.getContext('2d');
+            let particles = []; canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+            class Particle {
+                constructor(x, y, color, vel) { this.x = x; this.y = y; this.color = color; this.vel = vel; this.alpha = 1; }
+                update() { this.vel.x *= 0.96; this.vel.y *= 0.96; this.vel.y += 0.1; this.x += this.vel.x; this.y += this.vel.y; this.alpha -= 0.015; }
+                draw() { ctx.globalAlpha = this.alpha; ctx.fillStyle = this.color; ctx.beginPath(); ctx.arc(this.x, this.y, 2, 0, 7); ctx.fill(); }
+            }
+            function createExp() {
+                const x = Math.random()*canvas.width, y = Math.random()*canvas.height/2;
+                const heart = Math.random() > 0.5, color = heart ? '#ff4d6d' : `hsl(${Math.random()*360}, 100%, 60%)`;
+                for(let i=0; i<60; i++) {
+                    let vx, vy;
+                    if(heart) { const t = Math.random()*Math.PI*2; vx = (16*Math.pow(Math.sin(t),3))/3; vy = -(13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t))/3; }
+                    else { const a = Math.random()*Math.PI*2, s = Math.random()*6+2; vx = Math.cos(a)*s; vy = Math.sin(a)*s; }
+                    particles.push(new Particle(x,y,color,{x:vx, y:vy}));
+                }
+            }
+            function loop() {
+                ctx.fillStyle = 'rgba(10,10,10,0.2)'; ctx.fillRect(0,0,canvas.width,canvas.height);
+                if(Math.random()<0.06) createExp();
+                particles = particles.filter(p=>p.alpha>0); particles.forEach(p=>{p.update(); p.draw();});
+                requestAnimationFrame(loop);
+            }
+            loop();
+        }
+    </script>
+</body>
+</html>
